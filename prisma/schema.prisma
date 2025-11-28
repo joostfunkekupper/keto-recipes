@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FoodItem {
+  id          String   @id @default(cuid())
+  name        String
+  protein     Float    // grams per 100g
+  fat         Float    // grams per 100g
+  carbs       Float    // grams per 100g
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recipeIngredients RecipeIngredient[]
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  instructions String   @db.Text
+  servings     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ingredients  RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id         String   @id @default(cuid())
+  recipeId   String
+  foodItemId String
+  grams      Float    // quantity in grams
+
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+
+  @@unique([recipeId, foodItemId])
+}
+
+model UserPreference {
+  id          String   @id @default(cuid())
+  targetRatio Float    @default(3.0) // target keto ratio (e.g., 3:1 means 3 parts fat to 1 part protein+carbs)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
