@@ -197,4 +197,4 @@ Some ideas for additional features:
 
 ## License
 
-MIT
+Apache-2.0 license
