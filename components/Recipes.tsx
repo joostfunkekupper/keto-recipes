@@ -290,25 +290,57 @@ export default function Recipes() {
 
           <div className="mb-6">
             <h3 className="text-xl font-semibold mb-3 text-gray-900">Ingredients</h3>
-            <ul className="space-y-2">
-              {viewingRecipe.ingredients.map((ing) => {
-                const multiplier = ing.grams / 100
-                const protein = (ing.foodItem.protein * multiplier).toFixed(1)
-                const fat = (ing.foodItem.fat * multiplier).toFixed(1)
-                const carbs = (ing.foodItem.carbs * multiplier).toFixed(1)
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Food Item
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Protein (g)
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Fat (g)
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Carbs (g)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {viewingRecipe.ingredients.map((ing) => {
+                    const multiplier = ing.grams / 100
+                    const protein = (ing.foodItem.protein * multiplier).toFixed(1)
+                    const fat = (ing.foodItem.fat * multiplier).toFixed(1)
+                    const carbs = (ing.foodItem.carbs * multiplier).toFixed(1)
 
-                return (
-                  <li key={ing.id} className="bg-gray-50 p-3 rounded-lg">
-                    <div className="font-medium text-gray-800">
-                      {ing.grams}g {ing.foodItem.name}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      P: {protein}g | F: {fat}g | C: {carbs}g
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+                    return (
+                      <tr key={ing.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {ing.foodItem.name}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {ing.grams}g
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {protein}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {fat}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {carbs}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div>
