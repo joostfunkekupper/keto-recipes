@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET all recipes with ingredients
@@ -26,6 +28,15 @@ export async function GET() {
 // POST create new recipe
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'You must be signed in to create recipes' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { name, instructions, servings, ingredients } = body
 
@@ -41,6 +52,7 @@ export async function POST(request: Request) {
         name,
         instructions,
         servings: parseInt(servings),
+        createdById: session.user.id,
         ingredients: {
           create: ingredients.map((ing: any) => ({
             foodItemId: ing.foodItemId,

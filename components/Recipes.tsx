@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface FoodItem {
   id: string
@@ -38,6 +39,7 @@ const CALORIES_PER_GRAM_FAT = 9
 const CALORIES_PER_GRAM_CARBS = 4
 
 export default function Recipes() {
+  const { data: session } = useSession()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [targetRatio, setTargetRatio] = useState<number>(3.0)
@@ -350,20 +352,22 @@ export default function Recipes() {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-2">
-            <button
-              onClick={() => handleEdit(viewingRecipe)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Edit Recipe
-            </button>
-            <button
-              onClick={() => handleDelete(viewingRecipe.id)}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Delete Recipe
-            </button>
-          </div>
+          {session && (
+            <div className="mt-6 flex gap-2">
+              <button
+                onClick={() => handleEdit(viewingRecipe)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Edit Recipe
+              </button>
+              <button
+                onClick={() => handleDelete(viewingRecipe.id)}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Recipe
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -373,7 +377,7 @@ export default function Recipes() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Recipes</h2>
-        {!showForm && (
+        {!showForm && session && (
           <button
             onClick={() => setShowForm(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 export default function Settings() {
+  const { data: session } = useSession()
   const [targetRatio, setTargetRatio] = useState<string>('3.0')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -54,6 +56,14 @@ export default function Settings() {
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
 
       <div className="bg-white rounded-lg shadow-md p-6">
+        {!session && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              Please sign in to save your preferences. You can view the current settings below.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-lg font-medium text-gray-700 mb-2">
@@ -72,7 +82,8 @@ export default function Settings() {
                 required
                 value={targetRatio}
                 onChange={(e) => setTargetRatio(e.target.value)}
-                className="w-32 px-4 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                disabled={!session}
+                className="w-32 px-4 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
               <span className="text-lg font-medium text-gray-700">: 1</span>
             </div>
@@ -88,13 +99,15 @@ export default function Settings() {
             </ul>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isSaving ? 'Saving...' : 'Save Settings'}
-          </button>
+          {session && (
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isSaving ? 'Saving...' : 'Save Settings'}
+            </button>
+          )}
 
           {message && (
             <div

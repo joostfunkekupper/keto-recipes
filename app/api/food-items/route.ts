@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET all food items
@@ -19,6 +21,15 @@ export async function GET() {
 // POST create new food item
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'You must be signed in to create food items' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { name, protein, fat, carbs } = body
 
@@ -35,6 +46,7 @@ export async function POST(request: Request) {
         protein: parseFloat(protein),
         fat: parseFloat(fat),
         carbs: parseFloat(carbs),
+        createdById: session.user.id,
       },
     })
 
