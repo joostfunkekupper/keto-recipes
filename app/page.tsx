@@ -6,11 +6,12 @@ import { useRouter } from 'next/navigation'
 import FoodItems from '@/components/FoodItems'
 import Recipes from '@/components/Recipes'
 import Settings from '@/components/Settings'
+import Profile from '@/components/Profile'
 
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'settings'>('food-items')
+  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'settings' | 'profile'>('food-items')
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -96,6 +97,16 @@ export default function Home() {
             >
               Settings
             </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'profile'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Profile
+            </button>
           </div>
         </div>
 
@@ -104,6 +115,7 @@ export default function Home() {
           {activeTab === 'food-items' && <FoodItems />}
           {activeTab === 'recipes' && <Recipes />}
           {activeTab === 'settings' && <Settings />}
+          {activeTab === 'profile' && <Profile />}
         </div>
       </div>
     </div>
