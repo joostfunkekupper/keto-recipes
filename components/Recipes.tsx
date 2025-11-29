@@ -523,11 +523,11 @@ export default function Recipes() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Servings:</span>
-                    <span className="font-medium">{recipe.servings}</span>
+                    <span className="font-medium text-gray-900">{recipe.servings}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Calories/serving:</span>
-                    <span className="font-medium">{macros.caloriesPerServing}</span>
+                    <span className="font-medium text-gray-900">{macros.caloriesPerServing}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Keto Ratio:</span>
@@ -536,10 +536,10 @@ export default function Recipes() {
                     </span>
                   </div>
                   <div className="pt-2 border-t border-gray-200">
-                    <div className="flex justify-between text-xs">
-                      <span>P: {macros.totalProtein}g</span>
-                      <span>F: {macros.totalFat}g</span>
-                      <span>C: {macros.totalCarbs}g</span>
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>Protein: {macros.totalProtein}g</span>
+                      <span>Fat: {macros.totalFat}g</span>
+                      <span>Carbs: {macros.totalCarbs}g</span>
                     </div>
                   </div>
                 </div>
