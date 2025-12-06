@@ -88,37 +88,39 @@ export default function Home() {
               Recipes
             </button>
             {session && (
-              <button
-                onClick={() => setActiveTab('my-recipes')}
-                className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                  activeTab === 'my-recipes'
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                My Recipes
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('my-recipes')}
+                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    activeTab === 'my-recipes'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  My Recipes
+                </button>
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    activeTab === 'settings'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Settings
+                </button>
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    activeTab === 'profile'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Profile
+                </button>
+              </>
             )}
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'settings'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Settings
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'profile'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Profile
-            </button>
           </div>
         </div>
 
