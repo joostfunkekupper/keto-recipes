@@ -7,11 +7,12 @@ import FoodItems from '@/components/FoodItems'
 import Recipes from '@/components/Recipes'
 import Settings from '@/components/Settings'
 import Profile from '@/components/Profile'
+import About from '@/components/About'
 
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'my-recipes' | 'settings' | 'profile'>('recipes')
+  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'my-recipes' | 'settings' | 'profile' | 'about'>('recipes')
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -68,16 +69,6 @@ export default function Home() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex rounded-lg bg-white shadow-md p-1">
             <button
-              onClick={() => setActiveTab('food-items')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'food-items'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Food Items
-            </button>
-            <button
               onClick={() => setActiveTab('recipes')}
               className={`px-6 py-2 rounded-md font-medium transition-colors ${
                 activeTab === 'recipes'
@@ -86,6 +77,16 @@ export default function Home() {
               }`}
             >
               Recipes
+            </button>
+            <button
+              onClick={() => setActiveTab('food-items')}
+              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'food-items'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Food Items
             </button>
             {session && (
               <>
@@ -121,11 +122,22 @@ export default function Home() {
                 </button>
               </>
             )}
+            <button
+              onClick={() => setActiveTab('about')}
+              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'about'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              About
+            </button>
           </div>
         </div>
 
         {/* Tab Content */}
         <div className="max-w-6xl mx-auto">
+          {activeTab === 'about' && <About />}
           {activeTab === 'food-items' && <FoodItems />}
           {activeTab === 'recipes' && <Recipes recipeType="public" />}
           {activeTab === 'my-recipes' && <Recipes recipeType="my" />}
