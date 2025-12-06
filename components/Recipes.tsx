@@ -222,6 +222,45 @@ export default function Recipes({ recipeType }: RecipesProps) {
     }
   }
 
+  const calculateFormMacros = (): MacroCalculations => {
+    let totalProtein = 0
+    let totalFat = 0
+    let totalCarbs = 0
+
+    formData.ingredients.forEach((ing) => {
+      const foodItem = foodItems.find((item) => item.id === ing.foodItemId)
+      if (foodItem && ing.grams) {
+        const grams = parseFloat(ing.grams)
+        if (!isNaN(grams)) {
+          const multiplier = grams / 100
+          totalProtein += foodItem.protein * multiplier
+          totalFat += foodItem.fat * multiplier
+          totalCarbs += foodItem.carbs * multiplier
+        }
+      }
+    })
+
+    const totalCalories =
+      totalProtein * CALORIES_PER_GRAM_PROTEIN +
+      totalFat * CALORIES_PER_GRAM_FAT +
+      totalCarbs * CALORIES_PER_GRAM_CARBS
+
+    const servings = parseInt(formData.servings) || 1
+    const caloriesPerServing = totalCalories / servings
+
+    // Keto ratio: fat / (protein + carbs)
+    const ketoRatio = totalFat / (totalProtein + totalCarbs) || 0
+
+    return {
+      totalProtein: parseFloat(totalProtein.toFixed(1)),
+      totalFat: parseFloat(totalFat.toFixed(1)),
+      totalCarbs: parseFloat(totalCarbs.toFixed(1)),
+      totalCalories: Math.round(totalCalories),
+      caloriesPerServing: Math.round(caloriesPerServing),
+      ketoRatio: parseFloat(ketoRatio.toFixed(2)),
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -621,6 +660,50 @@ export default function Recipes({ recipeType }: RecipesProps) {
                 Public recipes are visible to all users. Private recipes are only visible to you.
               </p>
             </div>
+
+            {formData.ingredients.length > 0 && (() => {
+              const macros = calculateFormMacros()
+              return (
+                <div className="bg-gradient-to-br from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Recipe Preview</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <div className="text-xs text-gray-600">Protein</div>
+                      <div className="text-lg font-bold text-blue-600">{macros.totalProtein}g</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <div className="text-xs text-gray-600">Fat</div>
+                      <div className="text-lg font-bold text-yellow-600">{macros.totalFat}g</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <div className="text-xs text-gray-600">Carbs</div>
+                      <div className="text-lg font-bold text-red-600">{macros.totalCarbs}g</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg shadow-sm">
+                      <div className="text-xs text-gray-600">Calories</div>
+                      <div className="text-lg font-bold text-purple-600">{macros.totalCalories}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-xs text-gray-600">Keto Ratio</div>
+                        <div className={`text-2xl font-bold ${getKetoRatioColor(macros.ketoRatio)}`}>
+                          {macros.ketoRatio}:1
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-600">Target Ratio</div>
+                        <div className="text-lg font-semibold text-gray-700">{targetRatio}:1</div>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">
+                      {macros.totalFat}g ÷ ({macros.totalProtein}g + {macros.totalCarbs}g) = {macros.ketoRatio}:1
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
