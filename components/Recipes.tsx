@@ -23,6 +23,7 @@ interface Recipe {
   instructions: string
   servings: number
   ingredients: RecipeIngredient[]
+  createdById: string | null
 }
 
 interface MacroCalculations {
@@ -525,7 +526,7 @@ export default function Recipes() {
             </div>
           </div>
 
-          {session && (
+          {session?.user?.id === viewingRecipe.createdById && (
             <div className="mt-6 flex gap-2">
               <button
                 onClick={() => handleEdit(viewingRecipe)}
@@ -691,9 +692,16 @@ export default function Recipes() {
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => setViewingRecipe(recipe)}
               >
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                  {recipe.name}
-                </h3>
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    {recipe.name}
+                  </h3>
+                  {session?.user?.id === recipe.createdById && (
+                    <span className="inline-block px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                      My recipe
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Servings:</span>
