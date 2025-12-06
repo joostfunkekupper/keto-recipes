@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 
 interface FoodItem {
@@ -37,6 +37,93 @@ interface MacroCalculations {
 const CALORIES_PER_GRAM_PROTEIN = 4
 const CALORIES_PER_GRAM_FAT = 9
 const CALORIES_PER_GRAM_CARBS = 4
+
+interface SearchableDropdownProps {
+  foodItems: FoodItem[]
+  selectedId: string
+  onSelect: (id: string) => void
+  placeholder?: string
+}
+
+function SearchableDropdown({ foodItems, selectedId, onSelect, placeholder = 'Search food items...' }: SearchableDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const selectedItem = foodItems.find(item => item.id === selectedId)
+
+  const filteredItems = foodItems.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        setSearchTerm('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleSelect = (id: string) => {
+    onSelect(id)
+    setIsOpen(false)
+    setSearchTerm('')
+  }
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <div
+        onClick={() => {
+          setIsOpen(!isOpen)
+          setTimeout(() => inputRef.current?.focus(), 0)
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+      >
+        {selectedItem?.name || placeholder}
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden">
+          <div className="p-2 border-b border-gray-200">
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Type to filter..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+            />
+          </div>
+          <div className="overflow-y-auto max-h-48">
+            {filteredItems.length === 0 ? (
+              <div className="px-3 py-2 text-gray-500 text-sm">No items found</div>
+            ) : (
+              filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleSelect(item.id)}
+                  className={`px-3 py-2 cursor-pointer hover:bg-green-50 ${
+                    item.id === selectedId ? 'bg-green-100 font-medium' : ''
+                  } text-gray-900`}
+                >
+                  {item.name}
+                  <div className="text-xs text-gray-500">
+                    P: {item.protein}g | F: {item.fat}g | C: {item.carbs}g (per 100g)
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Recipes() {
   const { data: session } = useSession()
@@ -513,17 +600,14 @@ export default function Recipes() {
               </label>
               {formData.ingredients.map((ing, index) => (
                 <div key={index} className="flex gap-2 mb-2">
-                  <select
-                    value={ing.foodItemId}
-                    onChange={(e) => updateIngredient(index, 'foodItemId', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
-                  >
-                    {foodItems.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <SearchableDropdown
+                      foodItems={foodItems}
+                      selectedId={ing.foodItemId}
+                      onSelect={(id) => updateIngredient(index, 'foodItemId', id)}
+                      placeholder="Select a food item..."
+                    />
+                  </div>
                   <input
                     type="number"
                     step="0.1"
