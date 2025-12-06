@@ -54,7 +54,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
-    const { name, instructions, servings, ingredients } = body
+    const { name, instructions, servings, ingredients, isPublic } = body
 
     // If ingredients are provided, delete old ones and create new ones
     if (ingredients) {
@@ -69,6 +69,7 @@ export async function PATCH(
         ...(name && { name }),
         ...(instructions && { instructions }),
         ...(servings && { servings: parseInt(servings) }),
+        ...(isPublic !== undefined && { isPublic }),
         ...(ingredients && {
           ingredients: {
             create: ingredients.map((ing: any) => ({

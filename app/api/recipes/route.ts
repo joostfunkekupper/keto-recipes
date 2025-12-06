@@ -4,9 +4,31 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET all recipes with ingredients
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') // 'public' or 'my'
+
+    let whereClause = {}
+
+    if (type === 'my') {
+      // Only user's own recipes (both public and private)
+      if (!session?.user) {
+        return NextResponse.json([])
+      }
+      whereClause = {
+        createdById: session.user.id,
+      }
+    } else {
+      // Public recipes only (default view)
+      whereClause = {
+        isPublic: true,
+      }
+    }
+
     const recipes = await prisma.recipe.findMany({
+      where: whereClause,
       include: {
         ingredients: {
           include: {
@@ -38,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, instructions, servings, ingredients } = body
+    const { name, instructions, servings, ingredients, isPublic } = body
 
     if (!name || !instructions || !servings || !ingredients) {
       return NextResponse.json(
@@ -52,6 +74,7 @@ export async function POST(request: Request) {
         name,
         instructions,
         servings: parseInt(servings),
+        isPublic: isPublic !== undefined ? isPublic : false,
         createdById: session.user.id,
         ingredients: {
           create: ingredients.map((ing: any) => ({
@@ -71,8 +94,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(recipe, { status: 201 })
   } catch (error) {
+    console.error('Failed to create recipe:', error)
     return NextResponse.json(
-      { error: 'Failed to create recipe' },
+      { error: 'Failed to create recipe', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

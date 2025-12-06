@@ -11,7 +11,7 @@ import Profile from '@/components/Profile'
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'settings' | 'profile'>('food-items')
+  const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'my-recipes' | 'settings' | 'profile'>('recipes')
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -87,6 +87,18 @@ export default function Home() {
             >
               Recipes
             </button>
+            {session && (
+              <button
+                onClick={() => setActiveTab('my-recipes')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'my-recipes'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                My Recipes
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('settings')}
               className={`px-6 py-2 rounded-md font-medium transition-colors ${
@@ -113,7 +125,8 @@ export default function Home() {
         {/* Tab Content */}
         <div className="max-w-6xl mx-auto">
           {activeTab === 'food-items' && <FoodItems />}
-          {activeTab === 'recipes' && <Recipes />}
+          {activeTab === 'recipes' && <Recipes recipeType="public" />}
+          {activeTab === 'my-recipes' && <Recipes recipeType="my" />}
           {activeTab === 'settings' && <Settings />}
           {activeTab === 'profile' && <Profile />}
         </div>

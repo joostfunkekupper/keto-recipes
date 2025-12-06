@@ -24,6 +24,7 @@ interface Recipe {
   servings: number
   ingredients: RecipeIngredient[]
   createdById: string | null
+  isPublic: boolean
 }
 
 interface MacroCalculations {
@@ -126,7 +127,11 @@ function SearchableDropdown({ foodItems, selectedId, onSelect, placeholder = 'Se
   )
 }
 
-export default function Recipes() {
+interface RecipesProps {
+  recipeType: 'public' | 'my'
+}
+
+export default function Recipes({ recipeType }: RecipesProps) {
   const { data: session } = useSession()
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
@@ -140,6 +145,7 @@ export default function Recipes() {
     instructions: '',
     servings: '1',
     ingredients: [] as Array<{ foodItemId: string; grams: string }>,
+    isPublic: false,
   })
   const [isEditingQuantities, setIsEditingQuantities] = useState(false)
   const [isSavingQuantities, setIsSavingQuantities] = useState(false)
@@ -148,15 +154,17 @@ export default function Recipes() {
     fetchRecipes()
     fetchFoodItems()
     fetchPreferences()
-  }, [])
+  }, [recipeType])
 
   const fetchRecipes = async () => {
     try {
-      const res = await fetch('/api/recipes')
+      const url = recipeType === 'my' ? '/api/recipes?type=my' : '/api/recipes?type=public'
+      const res = await fetch(url)
       const data = await res.json()
-      setRecipes(data)
+      setRecipes(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to fetch recipes:', error)
+      setRecipes([])
     } finally {
       setIsLoading(false)
     }
@@ -244,6 +252,7 @@ export default function Recipes() {
         instructions: '',
         servings: '1',
         ingredients: [],
+        isPublic: false,
       })
       setShowForm(false)
       setEditingRecipe(null)
@@ -278,6 +287,7 @@ export default function Recipes() {
         foodItemId: ing.foodItem.id,
         grams: ing.grams.toString(),
       })),
+      isPublic: recipe.isPublic,
     })
     setViewingRecipe(null)
     setShowForm(true)
@@ -550,7 +560,9 @@ export default function Recipes() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Recipes</h2>
+        <h2 className="text-2xl font-bold text-gray-800">
+          {recipeType === 'public' ? 'Public Recipes' : 'My Recipes'}
+        </h2>
         {!showForm && session && (
           <button
             onClick={() => setShowForm(true)}
@@ -593,6 +605,21 @@ export default function Recipes() {
                 onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
               />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic ?? false}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                />
+                Make this recipe public
+              </label>
+              <p className="text-xs text-gray-500 mt-1 ml-6">
+                Public recipes are visible to all users. Private recipes are only visible to you.
+              </p>
             </div>
 
             <div>
@@ -667,6 +694,7 @@ export default function Recipes() {
                     instructions: '',
                     servings: '1',
                     ingredients: [],
+                    isPublic: false,
                   })
                 }}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
