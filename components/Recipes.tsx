@@ -53,6 +53,8 @@ export default function Recipes() {
     servings: '1',
     ingredients: [] as Array<{ foodItemId: string; grams: string }>,
   })
+  const [isEditingQuantities, setIsEditingQuantities] = useState(false)
+  const [isSavingQuantities, setIsSavingQuantities] = useState(false)
 
   useEffect(() => {
     fetchRecipes()
@@ -224,6 +226,59 @@ export default function Recipes() {
     return 'text-red-600'
   }
 
+  const updateIngredientQuantity = (ingredientId: string, newGrams: number) => {
+    if (!viewingRecipe) return
+
+    setViewingRecipe({
+      ...viewingRecipe,
+      ingredients: viewingRecipe.ingredients.map((ing) =>
+        ing.id === ingredientId ? { ...ing, grams: newGrams } : ing
+      ),
+    })
+    setIsEditingQuantities(true)
+  }
+
+  const saveQuantityChanges = async () => {
+    if (!viewingRecipe) return
+
+    setIsSavingQuantities(true)
+    try {
+      const ingredients = viewingRecipe.ingredients.map((ing) => ({
+        foodItemId: ing.foodItem.id,
+        grams: ing.grams.toString(),
+      }))
+
+      await fetch(`/api/recipes/${viewingRecipe.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: viewingRecipe.name,
+          instructions: viewingRecipe.instructions,
+          servings: viewingRecipe.servings.toString(),
+          ingredients,
+        }),
+      })
+
+      // Refresh the recipes list to update the cards
+      await fetchRecipes()
+      setIsEditingQuantities(false)
+    } catch (error) {
+      console.error('Failed to save quantity changes:', error)
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setIsSavingQuantities(false)
+    }
+  }
+
+  const cancelQuantityChanges = () => {
+    // Reset to the original recipe from the recipes list
+    const originalRecipe = recipes.find((r) => r.id === viewingRecipe?.id)
+    if (originalRecipe) {
+      setViewingRecipe(originalRecipe)
+    }
+    setIsEditingQuantities(false)
+  }
+
   if (isLoading) {
     return <div className="text-center py-8">Loading...</div>
   }
@@ -325,8 +380,21 @@ export default function Recipes() {
                         <td className="px-4 py-3 font-medium text-gray-900">
                           {ing.foodItem.name}
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-600">
-                          {ing.grams}g
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={ing.grams}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0
+                                updateIngredientQuantity(ing.id, value)
+                              }}
+                              className="w-20 px-2 py-1 text-right border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                            <span className="text-gray-600">g</span>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600">
                           {protein}
@@ -343,6 +411,24 @@ export default function Recipes() {
                 </tbody>
               </table>
             </div>
+            {isEditingQuantities && session && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={saveQuantityChanges}
+                  disabled={isSavingQuantities}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isSavingQuantities ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={cancelQuantityChanges}
+                  disabled={isSavingQuantities}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
