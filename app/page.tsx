@@ -12,6 +12,7 @@ export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'food-items' | 'recipes' | 'my-recipes' | 'profile' | 'about'>('recipes')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -65,62 +66,155 @@ export default function Home() {
         </header>
 
         {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-lg bg-white shadow-md p-1">
+        <div className="mb-8">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex justify-center mb-4">
             <button
-              onClick={() => setActiveTab('recipes')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'recipes'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="bg-white shadow-md rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700"
             >
-              Recipes
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              Menu
             </button>
-            <button
-              onClick={() => setActiveTab('food-items')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'food-items'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Food Items
-            </button>
-            {session && (
-              <>
+          </div>
+
+          {/* Mobile Menu Dropdown */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden flex justify-center mb-4">
+              <div className="bg-white rounded-lg shadow-lg p-2 w-full max-w-sm">
                 <button
-                  onClick={() => setActiveTab('my-recipes')}
-                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                    activeTab === 'my-recipes'
+                  onClick={() => {
+                    setActiveTab('recipes')
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-md font-medium transition-colors ${
+                    activeTab === 'recipes'
                       ? 'bg-green-600 text-white'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  My Recipes
+                  Recipes
                 </button>
                 <button
-                  onClick={() => setActiveTab('profile')}
-                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                    activeTab === 'profile'
+                  onClick={() => {
+                    setActiveTab('food-items')
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-md font-medium transition-colors ${
+                    activeTab === 'food-items'
                       ? 'bg-green-600 text-white'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  Profile
+                  Food Items
                 </button>
-              </>
-            )}
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'about'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              About
-            </button>
+                {session && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setActiveTab('my-recipes')
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-md font-medium transition-colors ${
+                        activeTab === 'my-recipes'
+                          ? 'bg-green-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      My Recipes
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('profile')
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-md font-medium transition-colors ${
+                        activeTab === 'profile'
+                          ? 'bg-green-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Profile
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    setActiveTab('about')
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-md font-medium transition-colors ${
+                    activeTab === 'about'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  About
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex justify-center">
+            <div className="inline-flex rounded-lg bg-white shadow-md p-1">
+              <button
+                onClick={() => setActiveTab('recipes')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'recipes'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Recipes
+              </button>
+              <button
+                onClick={() => setActiveTab('food-items')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'food-items'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Food Items
+              </button>
+              {session && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('my-recipes')}
+                    className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                      activeTab === 'my-recipes'
+                        ? 'bg-green-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    My Recipes
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                      activeTab === 'profile'
+                        ? 'bg-green-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Profile
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => setActiveTab('about')}
+                className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                  activeTab === 'about'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                About
+              </button>
+            </div>
           </div>
         </div>
 
