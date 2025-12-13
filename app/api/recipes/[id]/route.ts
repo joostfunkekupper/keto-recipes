@@ -53,6 +53,27 @@ export async function PATCH(
     }
 
     const { id } = await params
+
+    // Check if the user owns the recipe
+    const existingRecipe = await prisma.recipe.findUnique({
+      where: { id },
+      select: { createdById: true },
+    })
+
+    if (!existingRecipe) {
+      return NextResponse.json(
+        { error: 'Recipe not found' },
+        { status: 404 }
+      )
+    }
+
+    if (existingRecipe.createdById !== session.user.id) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this recipe' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { name, instructions, servings, ingredients, isPublic } = body
 
@@ -113,6 +134,27 @@ export async function DELETE(
     }
 
     const { id } = await params
+
+    // Check if the user owns the recipe
+    const existingRecipe = await prisma.recipe.findUnique({
+      where: { id },
+      select: { createdById: true },
+    })
+
+    if (!existingRecipe) {
+      return NextResponse.json(
+        { error: 'Recipe not found' },
+        { status: 404 }
+      )
+    }
+
+    if (existingRecipe.createdById !== session.user.id) {
+      return NextResponse.json(
+        { error: 'You do not have permission to delete this recipe' },
+        { status: 403 }
+      )
+    }
+
     await prisma.recipe.delete({
       where: { id },
     })

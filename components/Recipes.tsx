@@ -370,6 +370,32 @@ export default function Recipes({ recipeType }: RecipesProps) {
     setShowForm(true)
   }
 
+  const handleTogglePrivacy = async (recipe: Recipe) => {
+    const newStatus = !recipe.isPublic
+    const action = newStatus ? 'publish' : 'unpublish'
+
+    if (!confirm(`Are you sure you want to ${action} this recipe?`)) return
+
+    try {
+      const res = await fetch(`/api/recipes/${recipe.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: newStatus }),
+      })
+
+      if (res.ok) {
+        const updatedRecipe = await res.json()
+        setViewingRecipe(updatedRecipe)
+        fetchRecipes()
+      } else {
+        alert(`Failed to ${action} recipe`)
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} recipe:`, error)
+      alert(`Failed to ${action} recipe`)
+    }
+  }
+
   const addIngredient = () => {
     if (foodItems.length === 0) {
       alert('Please add food items first!')
@@ -613,7 +639,7 @@ export default function Recipes({ recipeType }: RecipesProps) {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-2">
+          <div className="mt-6 flex gap-2 flex-wrap">
             {session?.user?.id === viewingRecipe.createdById ? (
               <>
                 <button
@@ -627,6 +653,16 @@ export default function Recipes({ recipeType }: RecipesProps) {
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
                   Duplicate Recipe
+                </button>
+                <button
+                  onClick={() => handleTogglePrivacy(viewingRecipe)}
+                  className={`${
+                    viewingRecipe.isPublic
+                      ? 'bg-orange-600 hover:bg-orange-700'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white px-4 py-2 rounded-lg transition-colors`}
+                >
+                  {viewingRecipe.isPublic ? 'Make Private' : 'Make Public'}
                 </button>
                 <button
                   onClick={() => handleDelete(viewingRecipe.id)}
