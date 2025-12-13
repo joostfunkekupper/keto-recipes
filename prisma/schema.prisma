@@ -62,8 +62,6 @@ model RecipeIngredient {
 
   recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
-
-  @@unique([recipeId, foodItemId])
 }
 
 model UserPreference {
