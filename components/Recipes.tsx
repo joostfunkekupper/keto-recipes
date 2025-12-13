@@ -316,6 +316,44 @@ export default function Recipes({ recipeType }: RecipesProps) {
     }
   }
 
+  const handleDuplicate = async (recipe: Recipe) => {
+    if (!session) {
+      alert('Please sign in to duplicate recipes')
+      return
+    }
+
+    try {
+      const duplicateData = {
+        name: `${recipe.name} (Copy)`,
+        instructions: recipe.instructions,
+        servings: recipe.servings.toString(),
+        ingredients: recipe.ingredients.map((ing) => ({
+          foodItemId: ing.foodItem.id,
+          grams: ing.grams.toString(),
+        })),
+        isPublic: false, // Always create as private
+      }
+
+      const res = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(duplicateData),
+      })
+
+      if (res.ok) {
+        const newRecipe = await res.json()
+        alert('Recipe duplicated successfully! The copy has been added to your private recipes.')
+        setViewingRecipe(null)
+        fetchRecipes()
+      } else {
+        alert('Failed to duplicate recipe')
+      }
+    } catch (error) {
+      console.error('Failed to duplicate recipe:', error)
+      alert('Failed to duplicate recipe')
+    }
+  }
+
   const handleEdit = (recipe: Recipe) => {
     setEditingRecipe(recipe)
     setFormData({
@@ -575,22 +613,37 @@ export default function Recipes({ recipeType }: RecipesProps) {
             </div>
           </div>
 
-          {session?.user?.id === viewingRecipe.createdById && (
-            <div className="mt-6 flex gap-2">
+          <div className="mt-6 flex gap-2">
+            {session?.user?.id === viewingRecipe.createdById ? (
+              <>
+                <button
+                  onClick={() => handleEdit(viewingRecipe)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Edit Recipe
+                </button>
+                <button
+                  onClick={() => handleDuplicate(viewingRecipe)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Duplicate Recipe
+                </button>
+                <button
+                  onClick={() => handleDelete(viewingRecipe.id)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete Recipe
+                </button>
+              </>
+            ) : session ? (
               <button
-                onClick={() => handleEdit(viewingRecipe)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => handleDuplicate(viewingRecipe)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
               >
-                Edit Recipe
+                Duplicate to My Recipes
               </button>
-              <button
-                onClick={() => handleDelete(viewingRecipe.id)}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Recipe
-              </button>
-            </div>
-          )}
+            ) : null}
+          </div>
         </div>
       </div>
     )
