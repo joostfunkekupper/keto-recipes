@@ -17,9 +17,37 @@ A modern web application for managing ketogenic therapy diet recipes with automa
 ## Prerequisites
 
 - **Node.js >= 20.9.0** (required for Next.js 16)
-- **Docker** (for PostgreSQL database)
+- **Docker** and **Docker Compose** (for running the application)
 
-## Installation
+## Quick Start
+
+### Option 1: Docker (Recommended for Production)
+
+Run both the database and web application in Docker containers:
+
+1. **Configure environment variables**:
+   ```bash
+   cp .env.docker .env.docker.local
+   # Edit .env.docker.local and set a strong NEXTAUTH_SECRET
+   ```
+
+2. **Start all services**:
+   ```bash
+   docker-compose --env-file .env.docker.local up -d
+   ```
+
+3. **Open your browser**:
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+The first startup will automatically:
+- Build the Docker image
+- Start PostgreSQL database
+- Run database migrations
+- Start the web application
+
+### Option 2: Local Development
+
+Run the application locally with only the database in Docker:
 
 1. **Update Node.js** (if needed):
    ```bash
@@ -37,7 +65,7 @@ A modern web application for managing ketogenic therapy diet recipes with automa
 
 3. **Start the PostgreSQL database**:
    ```bash
-   docker-compose up -d
+   docker-compose up -d postgres
    ```
 
 4. **Initialize the database**:
@@ -115,29 +143,228 @@ Common therapeutic ratios:
 - **2:1** - Less restrictive ketogenic diet
 - **1:1** - Modified Atkins diet approach
 
+## Docker Commands
+
+### View logs:
+```bash
+# All services
+docker-compose logs -f
+
+# Web app only
+docker-compose logs -f web
+
+# Database only
+docker-compose logs -f postgres
+```
+
+### Rebuild and restart:
+```bash
+# Rebuild after code changes
+docker-compose --env-file .env.docker.local up --build -d
+
+# Restart without rebuilding
+docker-compose restart
+```
+
+### Stop services:
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (WARNING: deletes all data)
+docker-compose down -v
+```
+
+### Access container shell:
+```bash
+# Web app container
+docker exec -it keto-recipes-web sh
+
+# Database container
+docker exec -it keto-recipes-db psql -U ketouser -d ketorecipes
+```
+
 ## Database Management
 
-### View database:
+### View database (Prisma Studio):
 ```bash
+# If running locally
 npx prisma studio
+
+# If running in Docker
+docker exec -it keto-recipes-web npx prisma studio
+```
+
+### Run migrations:
+```bash
+# Local development
+npx prisma migrate dev
+
+# Production (Docker automatically runs this on startup)
+docker exec -it keto-recipes-web npx prisma migrate deploy
 ```
 
 ### Reset database:
 ```bash
+# Local development
 npx prisma db push --force-reset
+
+# Docker
+docker-compose down -v
+docker-compose --env-file .env.docker.local up -d
 ```
 
-### Stop database:
+## Production Deployment
+
+### Requirements
+- Server with Docker and Docker Compose installed
+- Domain name (optional, for HTTPS)
+- Reverse proxy like Nginx or Traefik (for HTTPS)
+
+### Deployment Steps
+
+1. **Clone the repository on your server**:
+   ```bash
+   git clone <your-repo-url>
+   cd keto-recipes
+   ```
+
+2. **Create production environment file**:
+   ```bash
+   cp .env.docker .env.production
+   ```
+
+3. **Edit `.env.production` with secure values**:
+   ```bash
+   # Generate a strong secret
+   NEXTAUTH_SECRET=$(openssl rand -base64 32)
+
+   # Set your production URL
+   NEXTAUTH_URL=https://yourdomain.com
+   ```
+
+4. **Update `docker-compose.yml` for production** (optional optimizations):
+   ```yaml
+   # Change database password in production
+   # Add volume for database backups
+   # Configure resource limits
+   ```
+
+5. **Start the application**:
+   ```bash
+   docker-compose --env-file .env.production up -d
+   ```
+
+6. **Set up HTTPS with Nginx** (recommended):
+   ```nginx
+   server {
+       listen 80;
+       server_name yourdomain.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+7. **Enable SSL with Let's Encrypt**:
+   ```bash
+   sudo certbot --nginx -d yourdomain.com
+   ```
+
+### Database Backups
+
+**Create a backup**:
 ```bash
-docker-compose down
+docker exec keto-recipes-db pg_dump -U ketouser ketorecipes > backup_$(date +%Y%m%d).sql
 ```
+
+**Restore from backup**:
+```bash
+cat backup_20231215.sql | docker exec -i keto-recipes-db psql -U ketouser -d ketorecipes
+```
+
+**Automated backups** (add to crontab):
+```bash
+# Daily backup at 2 AM
+0 2 * * * docker exec keto-recipes-db pg_dump -U ketouser ketorecipes > /backups/keto_$(date +\%Y\%m\%d).sql
+```
+
+### Monitoring
+
+**Check application health**:
+```bash
+# Check if containers are running
+docker-compose ps
+
+# Check resource usage
+docker stats keto-recipes-web keto-recipes-db
+
+# View recent logs
+docker-compose logs --tail=100 web
+```
+
+**Set up monitoring tools** (optional):
+- Uptime monitoring: UptimeRobot, Healthchecks.io
+- Application monitoring: Sentry, LogRocket
+- Server monitoring: Prometheus + Grafana
+
+### Updating the Application
+
+1. **Pull latest changes**:
+   ```bash
+   git pull origin main
+   ```
+
+2. **Rebuild and restart**:
+   ```bash
+   docker-compose --env-file .env.production up --build -d
+   ```
+
+3. **Verify deployment**:
+   ```bash
+   docker-compose logs -f web
+   ```
+
+### Security Best Practices
+
+- Use strong, unique `NEXTAUTH_SECRET` in production
+- Enable HTTPS with valid SSL certificate
+- Change default database credentials
+- Regularly backup your database
+- Keep Docker images updated (`docker-compose pull`)
+- Use environment variables for all secrets (never commit to git)
+- Set up firewall rules (only expose ports 80, 443)
+- Enable Docker container resource limits
+- Regular security updates for the host OS
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
 - **Database**: PostgreSQL (Docker)
-- **ORM**: Prisma
+- **ORM**: Prisma 7
+- **Authentication**: NextAuth.js
+- **Containerization**: Docker & Docker Compose
+
+## Prisma 7 Configuration
+
+This project uses Prisma 7, which has a new configuration approach:
+
+- **`prisma/schema.prisma`**: Defines your database schema (models, relationships)
+- **`prisma.config.ts`**: Configures datasource connection using `defineConfig` from `prisma/config`
+- **`lib/prisma.ts`**: PrismaClient initialization with `datasourceUrl` option for runtime configuration
+
+The database URL is configured in `prisma.config.ts` and passed at runtime via the `DATABASE_URL` environment variable. This allows for flexible configuration across different environments.
+
+For more information, see:
+- [Prisma Config Reference](https://www.prisma.io/docs/orm/reference/prisma-config-reference)
+- [Upgrade to Prisma ORM 7](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
 
 ## Project Structure
 
@@ -145,55 +372,118 @@ docker-compose down
 keto-recipes/
 ├── app/
 │   ├── api/
+│   │   ├── auth/           # NextAuth.js authentication
 │   │   ├── food-items/     # Food items CRUD endpoints
 │   │   ├── recipes/        # Recipes CRUD endpoints
 │   │   └── preferences/    # User preferences endpoint
+│   ├── layout.tsx          # Root layout with metadata
 │   └── page.tsx            # Main app page
 ├── components/
 │   ├── FoodItems.tsx       # Food items management UI
 │   ├── Recipes.tsx         # Recipes management UI with calculations
-│   └── Settings.tsx        # Settings page for target ratio
+│   ├── Settings.tsx        # Settings page for target ratio
+│   └── SessionProvider.tsx # NextAuth session provider
 ├── lib/
+│   ├── auth.ts             # NextAuth configuration
 │   └── prisma.ts           # Prisma client singleton
 ├── prisma/
 │   └── schema.prisma       # Database schema
-├── docker-compose.yml      # PostgreSQL setup
-└── .env                    # Database connection string
+├── prisma.config.ts        # Prisma 7 datasource configuration
+├── docker-compose.yml      # Docker services (PostgreSQL + Web)
+├── Dockerfile              # Multi-stage build for Next.js
+├── .dockerignore           # Docker build exclusions
+├── .env                    # Local development environment
+├── .env.docker             # Docker environment template
+└── next.config.ts          # Next.js configuration
 ```
 
 ## Database Schema
 
-- **FoodItem**: Stores food items with nutritional values per 100g
-- **Recipe**: Stores recipe information (name, instructions, servings)
+- **User**: User accounts with authentication credentials
+- **FoodItem**: Food items with nutritional values per 100g (linked to creator)
+- **Recipe**: Recipe information (name, instructions, servings, public/private status)
 - **RecipeIngredient**: Links recipes to food items with quantities
-- **UserPreference**: Stores user preferences (target keto ratio)
+- **UserPreference**: User preferences (target keto ratio)
 
 ## Troubleshooting
 
-### Port 5433 already in use
-Change the port in `docker-compose.yml` and update `.env` accordingly.
+### Docker: Port already in use
+If port 3000 or 5433 is already in use:
+```yaml
+# Edit docker-compose.yml and change the port mapping
+ports:
+  - "3001:3000"  # Use 3001 instead of 3000
+```
 
-### Node version issues
+### Docker: Build fails
+```bash
+# Clean Docker cache and rebuild
+docker-compose down
+docker system prune -a
+docker-compose --env-file .env.docker.local up --build
+```
+
+### Node version issues (local development)
 Make sure you're using Node.js >= 20.9.0:
 ```bash
 node --version
 ```
 
 ### Database connection issues
-1. Ensure Docker container is running: `docker ps`
-2. Check connection string in `.env`
-3. Try restarting the container: `docker-compose restart`
+```bash
+# Check if containers are running
+docker ps
+
+# Check container logs
+docker-compose logs postgres
+
+# Restart containers
+docker-compose restart
+
+# Full reset (WARNING: deletes all data)
+docker-compose down -v
+docker-compose --env-file .env.docker.local up -d
+```
+
+### Next.js build errors
+```bash
+# Clear Next.js cache
+rm -rf .next
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Prisma errors
+```bash
+# Regenerate Prisma client
+npx prisma generate
+
+# Reset and sync database
+npx prisma db push --force-reset
+```
+
+## Features Implemented
+
+- User authentication and authorization
+- Multi-user support with data isolation
+- Public/private recipe sharing
+- CSV bulk import for food items
+- Automatic macro and keto ratio calculations
+- Docker deployment for production
+- Responsive mobile-friendly design
 
 ## Future Enhancements
 
 Some ideas for additional features:
-- User authentication (multi-user support)
 - Search and filter for recipes and food items
 - Recipe categories and tags
 - Favorites and meal planning
 - Export recipes to PDF
 - Import food items from nutritional databases
-- Recipe sharing
+- Meal planning calendar
+- Keep track of meals to understand historical trends
 
 ## License
 
