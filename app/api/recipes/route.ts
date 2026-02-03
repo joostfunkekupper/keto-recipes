@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, instructions, servings, ingredients, isPublic } = body
 
-    if (!name || !instructions || !servings || !ingredients) {
+    if (!name || !servings || !ingredients) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const recipe = await prisma.recipe.create({
       data: {
         name,
-        instructions,
+        instructions: instructions || null,
         servings: parseInt(servings),
         isPublic: isPublic !== undefined ? isPublic : false,
         createdById: session.user.id,

@@ -20,7 +20,7 @@ interface RecipeIngredient {
 interface Recipe {
   id: string
   name: string
-  instructions: string
+  instructions: string | null
   servings: number
   ingredients: RecipeIngredient[]
   createdById: string | null
@@ -325,7 +325,7 @@ export default function Recipes({ recipeType }: RecipesProps) {
     try {
       const duplicateData = {
         name: `${recipe.name} (Copy)`,
-        instructions: recipe.instructions,
+        instructions: recipe.instructions || '',
         servings: recipe.servings.toString(),
         ingredients: recipe.ingredients.map((ing) => ({
           foodItemId: ing.foodItem.id,
@@ -358,7 +358,7 @@ export default function Recipes({ recipeType }: RecipesProps) {
     setEditingRecipe(recipe)
     setFormData({
       name: recipe.name,
-      instructions: recipe.instructions,
+      instructions: recipe.instructions || '',
       servings: recipe.servings.toString(),
       ingredients: recipe.ingredients.map((ing) => ({
         foodItemId: ing.foodItem.id,
@@ -632,12 +632,14 @@ export default function Recipes({ recipeType }: RecipesProps) {
             )}
           </div>
 
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-gray-900">Instructions</h3>
-            <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-gray-700">
-              {viewingRecipe.instructions}
+          {viewingRecipe.instructions && (
+            <div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-900">Instructions</h3>
+              <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-gray-700">
+                {viewingRecipe.instructions}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6 flex gap-2 flex-wrap">
             {session?.user?.id === viewingRecipe.createdById ? (
@@ -837,10 +839,9 @@ export default function Recipes({ recipeType }: RecipesProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Instructions
+                Instructions (Optional)
               </label>
               <textarea
-                required
                 rows={6}
                 value={formData.instructions}
                 onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}

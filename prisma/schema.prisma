@@ -42,7 +42,7 @@ model FoodItem {
 model Recipe {
   id           String   @id @default(cuid())
   name         String
-  instructions String   @db.Text
+  instructions String?  @db.Text
   servings     Int
   isPublic     Boolean  @default(false)
   createdAt    DateTime @default(now())

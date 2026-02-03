@@ -88,7 +88,7 @@ export async function PATCH(
       where: { id },
       data: {
         ...(name && { name }),
-        ...(instructions && { instructions }),
+        ...(instructions !== undefined && { instructions: instructions || null }),
         ...(servings && { servings: parseInt(servings) }),
         ...(isPublic !== undefined && { isPublic }),
         ...(ingredients && {
