@@ -35,6 +35,13 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState('')
 
+  // Import/export state
+  const [importMessage, setImportMessage] = useState('')
+  const [importConflicts, setImportConflicts] = useState<string[]>([])
+  const [pendingImport, setPendingImport] = useState<{ foodItems: any[]; recipes: any[] } | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
   // Target ratio state
   const [targetRatio, setTargetRatio] = useState<string>('3.0')
   const [isSavingRatio, setIsSavingRatio] = useState(false)
@@ -187,6 +194,108 @@ export default function Profile() {
       console.error('Failed to save preferences:', error)
     } finally {
       setIsSavingRatio(false)
+    }
+  }
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      const res = await fetch('/api/recipes/export')
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'recipes.xml'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setImportMessage('Failed to export recipes.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const parseXmlFile = (file: File): Promise<{ foodItems: any[]; recipes: any[] }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(text, 'application/xml')
+
+          const parseError = doc.querySelector('parsererror')
+          if (parseError) throw new Error('Invalid XML file')
+
+          const foodItems = Array.from(doc.querySelectorAll('foodItems > foodItem')).map((el) => ({
+            name: el.querySelector('name')?.textContent ?? '',
+            protein: parseFloat(el.querySelector('protein')?.textContent ?? '0'),
+            fat: parseFloat(el.querySelector('fat')?.textContent ?? '0'),
+            carbs: parseFloat(el.querySelector('carbs')?.textContent ?? '0'),
+          }))
+
+          const recipes = Array.from(doc.querySelectorAll('recipes > recipe')).map((el) => ({
+            name: el.querySelector('name')?.textContent ?? '',
+            servings: parseInt(el.querySelector('servings')?.textContent ?? '1'),
+            isPublic: el.querySelector('isPublic')?.textContent === 'true',
+            instructions: el.querySelector('instructions')?.textContent ?? '',
+            ingredients: Array.from(el.querySelectorAll('ingredients > ingredient')).map((ing) => ({
+              foodItemName: ing.querySelector('foodItemName')?.textContent ?? '',
+              grams: parseFloat(ing.querySelector('grams')?.textContent ?? '0'),
+            })),
+          }))
+
+          resolve({ foodItems, recipes })
+        } catch (err) {
+          reject(err)
+        }
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsText(file)
+    })
+  }
+
+  const doImport = async (data: { foodItems: any[]; recipes: any[] }, override: boolean) => {
+    setIsImporting(true)
+    setImportMessage('')
+    try {
+      const res = await fetch('/api/recipes/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, override }),
+      })
+      const json = await res.json()
+      if (res.status === 409) {
+        setImportConflicts(json.conflicts)
+        setPendingImport(data)
+        setImportMessage('')
+      } else if (res.ok) {
+        setImportMessage(`Successfully imported ${json.imported} recipe(s).`)
+        setImportConflicts([])
+        setPendingImport(null)
+      } else {
+        setImportMessage(json.error || 'Import failed.')
+      }
+    } catch {
+      setImportMessage('Import failed.')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImportMessage('')
+    setImportConflicts([])
+    setPendingImport(null)
+    try {
+      const data = await parseXmlFile(file)
+      await doImport(data, false)
+    } catch {
+      setImportMessage('Failed to parse XML file.')
     }
   }
 
@@ -403,6 +512,96 @@ export default function Profile() {
               Your recipes will display their calculated keto ratio, color-coded based on how close
               they are to your target ratio.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recipe Data */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900">Recipe Data</h3>
+
+        <div className="space-y-6">
+          {/* Export */}
+          <div>
+            <h4 className="font-medium text-gray-800 mb-1">Export Recipes</h4>
+            <p className="text-sm text-gray-600 mb-3">
+              Download all your recipes and their food items as an XML file.
+            </p>
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400"
+            >
+              {isExporting ? 'Exporting...' : 'Export Recipes'}
+            </button>
+          </div>
+
+          <div className="border-t border-gray-200" />
+
+          {/* Import */}
+          <div>
+            <h4 className="font-medium text-gray-800 mb-1">Import Recipes</h4>
+            <p className="text-sm text-gray-600 mb-3">
+              Import recipes from a previously exported XML file.
+            </p>
+            <input
+              id="import-file-input"
+              type="file"
+              accept=".xml"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <button
+              onClick={() => document.getElementById('import-file-input')?.click()}
+              disabled={isImporting}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400"
+            >
+              {isImporting ? 'Importing...' : 'Import Recipes'}
+            </button>
+
+            {importConflicts.length > 0 && pendingImport && (
+              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="font-semibold text-yellow-800 mb-2">
+                  The following recipes already exist and will be overwritten:
+                </p>
+                <ul className="list-disc list-inside text-sm text-yellow-700 mb-4 space-y-1">
+                  {importConflicts.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => doImport(pendingImport, true)}
+                    disabled={isImporting}
+                    className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 text-sm"
+                  >
+                    Proceed
+                  </button>
+                  <button
+                    onClick={() => {
+                      setImportConflicts([])
+                      setPendingImport(null)
+                    }}
+                    disabled={isImporting}
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors disabled:bg-gray-200 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {importMessage && (
+              <div
+                className={`mt-3 p-3 rounded-lg text-sm ${
+                  importMessage.includes('Successfully')
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {importMessage}
+              </div>
+            )}
           </div>
         </div>
       </div>
